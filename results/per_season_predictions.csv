@@ -1,11 +1,11 @@
-season,actual_mvp,predicted_mvp
-2016,Stephen Curry,Stephen Curry
-2017,Russell Westbrook,James Harden
-2018,James Harden,James Harden
-2019,Giannis Antetokounmpo,Giannis Antetokounmpo
-2020,Giannis Antetokounmpo,Giannis Antetokounmpo
-2021,Nikola Jokić,Nikola Jokić
-2022,Nikola Jokić,Nikola Jokić
-2023,Joel Embiid,Nikola Jokić
-2024,Nikola Jokić,Nikola Jokić
-2025,Shai Gilgeous-Alexander,Shai Gilgeous-Alexander
+season,actual_mvp,predicted_mvp,correct,actual_share,predicted_share_for_winner,candidate_count
+2016,Stephen Curry,Stephen Curry,True,1.0,1.0,30
+2017,Russell Westbrook,James Harden,False,0.879,0.6720475491753951,30
+2018,James Harden,James Harden,True,0.955,1.0,30
+2019,Giannis Antetokounmpo,Giannis Antetokounmpo,True,0.932,0.7301305373017297,30
+2020,Giannis Antetokounmpo,Giannis Antetokounmpo,True,0.952,0.7544095111479107,30
+2021,Nikola Jokić,Nikola Jokić,True,0.961,0.5879125568115035,30
+2022,Nikola Jokić,Nikola Jokić,True,0.875,0.5403196861790263,30
+2023,Joel Embiid,Nikola Jokić,False,0.915,0.6070587060774106,30
+2024,Nikola Jokić,Nikola Jokić,True,0.935,0.7249063359456102,30
+2025,Shai Gilgeous-Alexander,Shai Gilgeous-Alexander,True,0.913,0.8782353395281564,30

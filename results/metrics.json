@@ -1,30 +1,112 @@
-[
-  {
-    "model": "Ridge",
-    "rmse": 0.16376145950722165,
-    "r2": 0.6254182549913736,
-    "top1_acc": 0.7,
-    "top3_acc": 1.0
-  },
-  {
-    "model": "RandomForest",
-    "rmse": 0.14751862126660584,
-    "r2": 0.6960396769340037,
-    "top1_acc": 0.8,
-    "top3_acc": 1.0
-  },
-  {
-    "model": "GradientBoosting",
-    "rmse": 0.1303139117081784,
-    "r2": 0.762805414613126,
-    "top1_acc": 0.8,
-    "top3_acc": 1.0
-  },
-  {
-    "model": "XGBoost",
-    "rmse": 0.12695403650636947,
-    "r2": 0.774878882664912,
-    "top1_acc": 0.7,
-    "top3_acc": 1.0
-  }
-]
+{
+  "target": "Share",
+  "candidate_rule": "G >= 41 and top 30 by Win Shares per season; no target-based filtering",
+  "test_seasons_requested": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "test_seasons_present": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "raw_rows": 17678,
+  "candidate_rows": 1380,
+  "feature_columns": [
+    "PTS",
+    "TRB",
+    "AST",
+    "STL",
+    "BLK",
+    "TOV",
+    "FG%",
+    "3P%",
+    "FT%",
+    "MP",
+    "G",
+    "PER",
+    "TS%",
+    "USG%",
+    "WS",
+    "WS/48",
+    "BPM",
+    "VORP",
+    "TeamWinPct",
+    "PTS_rel",
+    "TRB_rel",
+    "AST_rel",
+    "PER_rel",
+    "WS_rel",
+    "BPM_rel",
+    "VORP_rel"
+  ],
+  "selected_model": "GradientBoosting",
+  "selection_criterion": "highest top-1 accuracy, then lowest RMSE",
+  "metrics": [
+    {
+      "model": "Ridge",
+      "rmse": 0.11939052067889454,
+      "mae": 0.07457509240596231,
+      "r2": 0.7071741801236313,
+      "top1_acc": 0.8,
+      "top3_acc": 1.0,
+      "n_test_rows": 300,
+      "n_test_seasons": 10
+    },
+    {
+      "model": "RandomForest",
+      "rmse": 0.11047274243391103,
+      "mae": 0.06080283280051044,
+      "r2": 0.7492852147566631,
+      "top1_acc": 0.8,
+      "top3_acc": 1.0,
+      "n_test_rows": 300,
+      "n_test_seasons": 10
+    },
+    {
+      "model": "GradientBoosting",
+      "rmse": 0.10192633991307844,
+      "mae": 0.053372633375893985,
+      "r2": 0.7865763543265295,
+      "top1_acc": 0.8,
+      "top3_acc": 1.0,
+      "n_test_rows": 300,
+      "n_test_seasons": 10
+    },
+    {
+      "model": "XGBoost",
+      "rmse": 0.10226746914974011,
+      "mae": 0.05242505434267611,
+      "r2": 0.7851453821532635,
+      "top1_acc": 0.7,
+      "top3_acc": 0.9,
+      "n_test_rows": 300,
+      "n_test_seasons": 10
+    },
+    {
+      "model": "WinSharesRankBaseline",
+      "rmse": null,
+      "mae": null,
+      "r2": null,
+      "top1_acc": 0.6,
+      "top3_acc": 0.8,
+      "n_test_rows": 300,
+      "n_test_seasons": 10
+    }
+  ]
+}
