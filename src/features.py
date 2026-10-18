@@ -1,56 +1,68 @@
-"""Shared data loading + feature engineering for the NBA MVP project."""
+"""Shared data loading and leakage-safe feature engineering for NBA MVP prediction."""
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 
-# Per-game, advanced and team-level features used by the models.
 FEATURES = [
-    "PTS", "TRB", "AST", "STL", "BLK", "TOV",
-    "FG%", "3P%", "FT%", "MP", "G",
-    "PER", "TS%", "USG%", "WS", "WS/48", "BPM", "VORP",
-    "TeamWinPct",
+    "PTS", "TRB", "AST", "STL", "BLK", "TOV", "FG%", "3P%", "FT%", "MP", "G",
+    "PER", "TS%", "USG%", "WS", "WS/48", "BPM", "VORP", "TeamWinPct",
 ]
 TARGET = "Share"
-MIN_GAMES = 41  # voters rarely consider players who missed half the season
+MIN_GAMES = 41
+CANDIDATES_PER_SEASON = 30
 
 
 def load_dataset(path: str = "data/dataset.csv") -> pd.DataFrame:
     df = pd.read_csv(path)
-    for col in FEATURES + [TARGET]:
+    required = {"Season", "Player", TARGET, *FEATURES}
+    missing = required.difference(df.columns)
+    if missing:
+        raise ValueError(f"Dataset is missing required columns: {sorted(missing)}")
+    for col in FEATURES + [TARGET, "Season", "G"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.dropna(subset=["Season", "Player", TARGET, "G"])
+    df["Season"] = df["Season"].astype(int)
     return df
 
 
-def build_candidates(df: pd.DataFrame) -> pd.DataFrame:
-    """Keep only plausible MVP candidates and add season-relative features.
+def build_candidates(df: pd.DataFrame, candidates_per_season: int = CANDIDATES_PER_SEASON) -> pd.DataFrame:
+    """Build an MVP candidate pool without using actual MVP votes to select rows.
 
-    Relative features matter because the league changes over time (pace, 3-point
-    era): a 25 PPG season meant something different in 1990 vs 2020. Each stat is
-    also expressed as a rank-percentile *within its season*.
+    Eligibility uses games played and Win Shares only. Actual vote share is used
+    solely as the target. Season-relative percentiles are computed among all
+    eligible players before narrowing to the top Win Shares candidates.
     """
+    if candidates_per_season < 1:
+        raise ValueError("candidates_per_season must be at least 1")
     df = df[df["G"] >= MIN_GAMES].copy()
-    df[FEATURES] = df[FEATURES].fillna(0.0)
+    df[FEATURES] = df[FEATURES].replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
-    # Candidate pool: top 15 players per season by Win Shares + anyone who got votes.
+    relative_cols = ["PTS", "TRB", "AST", "PER", "WS", "BPM", "VORP"]
+    for col in relative_cols:
+        df[f"{col}_rel"] = df.groupby("Season")[col].rank(pct=True, method="average")
+
+    # Crucially, do not include (TARGET > 0) here: that would use the answer
+    # to decide which rows are eligible for evaluation.
     df["ws_rank"] = df.groupby("Season")["WS"].rank(ascending=False, method="first")
-    df = df[(df["ws_rank"] <= 15) | (df[TARGET] > 0)].copy()
-
-    for col in ["PTS", "TRB", "AST", "PER", "WS", "BPM", "VORP"]:
-        df[f"{col}_rel"] = df.groupby("Season")[col].rank(pct=True)
+    df = df[df["ws_rank"] <= candidates_per_season].copy()
     return df.reset_index(drop=True)
 
 
-def feature_columns(df: pd.DataFrame):
+def feature_columns(df: pd.DataFrame) -> list[str]:
     return FEATURES + [c for c in df.columns if c.endswith("_rel")]
 
 
 def top_k_accuracy(df: pd.DataFrame, pred_col: str, k: int = 1) -> float:
-    """Fraction of seasons where the true MVP (max Share) is in the model's top-k."""
+    """Fraction of seasons whose actual MVP is among the top-k predictions."""
+    if k < 1:
+        raise ValueError("k must be at least 1")
     hits, seasons = 0, 0
-    for _, g in df.groupby("Season"):
-        if g[TARGET].max() <= 0:
+    for _, group in df.groupby("Season"):
+        if group[TARGET].max() <= 0:
             continue
-        true_mvp = g.loc[g[TARGET].idxmax(), "Player"]
-        top = g.nlargest(k, pred_col)["Player"].tolist()
-        hits += int(true_mvp in top)
+        true_mvp_idx = group[TARGET].idxmax()
+        top_indices = group.nlargest(k, pred_col).index
+        hits += int(true_mvp_idx in top_indices)
         seasons += 1
-    return hits / max(seasons, 1)
+    return hits / seasons if seasons else float("nan")

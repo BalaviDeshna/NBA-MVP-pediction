@@ -1,11 +1,8 @@
-"""Live demo: predict the MVP race for any season in the dataset.
+"""Predict and display an MVP race for a season in the dataset.
 
-The saved model was trained on all seasons, so for an honest demo of a past season
-use `--honest`, which retrains without that season first.
-
-Usage:
-    python src/predict.py --season 2025
-    python src/predict.py --season 2023 --honest --top 10
+For a historical evaluation/demo, use --honest to exclude that season from
+training. The saved model was fit on all seasons and is intended for inference
+on a genuinely unseen season, not retrospective evaluation.
 """
 import argparse
 
@@ -17,35 +14,39 @@ from train import get_models
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--season", type=int, required=True, help="season ending year, e.g. 2025 for 2024-25")
-    ap.add_argument("--data", default="data/dataset.csv")
-    ap.add_argument("--top", type=int, default=5)
-    ap.add_argument("--honest", action="store_true", help="retrain excluding the chosen season")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--season", type=int, required=True, help="season-ending year, e.g. 2025 for 2024-25")
+    parser.add_argument("--data", default="data/dataset.csv")
+    parser.add_argument("--top", type=int, default=5)
+    parser.add_argument("--honest", action="store_true", help="retrain excluding the selected season")
+    args = parser.parse_args()
+    if args.top < 1:
+        raise SystemExit("--top must be at least 1")
 
     df = build_candidates(load_dataset(args.data))
     bundle = joblib.load("models/best_model.joblib")
     cols, name = bundle["columns"], bundle["name"]
     season = df[df["Season"] == args.season].copy()
     if season.empty:
-        raise SystemExit(f"No data for season {args.season}")
+        raise SystemExit(f"No eligible candidate data for season {args.season}")
 
     if args.honest:
-        model = get_models()[name]
         train = df[df["Season"] != args.season]
+        if train.empty:
+            raise SystemExit("No training data remains after excluding this season")
+        model = get_models()[name]
         model.fit(train[cols], train[TARGET])
     else:
         model = bundle["model"]
+        print("Note: saved model was trained on all seasons; use --honest for historical evaluation.")
 
     season["predicted_share"] = np.clip(model.predict(season[cols]), 0, 1)
     ranked = season.sort_values("predicted_share", ascending=False).head(args.top)
-
-    print(f"\nPredicted MVP race, {args.season - 1}-{str(args.season)[2:]}  (model: {name}{', honest' if args.honest else ''})")
-    print("-" * 62)
-    for i, (_, r) in enumerate(ranked.iterrows(), 1):
-        actual = f"   actual share {r[TARGET]:.3f}" if r[TARGET] > 0 else ""
-        print(f"{i:>2}. {r['Player']:<26} predicted share {r['predicted_share']:.3f}{actual}")
+    print(f"\nPredicted MVP race, {args.season - 1}-{str(args.season)[2:]} (model: {name}{', honest' if args.honest else ''})")
+    print("-" * 72)
+    for rank, (_, row) in enumerate(ranked.iterrows(), 1):
+        actual = f" | actual share {row[TARGET]:.3f}" if row[TARGET] > 0 else ""
+        print(f"{rank:>2}. {row['Player']:<27} predicted share {row['predicted_share']:.3f}{actual}")
     print(f"\nPredicted MVP: {ranked.iloc[0]['Player']}")
 
 

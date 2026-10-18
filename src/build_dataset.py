@@ -84,6 +84,8 @@ def main():
     # advanced stats
     a_season, a_player, a_tm = pick(adv, "season"), pick(adv, "player"), pick(adv, "tm", "team")
     adv = adv[(adv[a_season] >= args.start) & (adv[a_season] <= args.end)]
+    if "lg" in adv.columns:
+        adv = adv[adv["lg"].astype(str).str.upper() == "NBA"]
     adv = one_row_per_player_season(adv, a_tm, [a_season, a_player])
     adv_out = pd.DataFrame({
         "Season": adv[a_season].astype(int), "Player": adv[a_player].str.replace("*", "", regex=False).str.strip(),
@@ -96,6 +98,8 @@ def main():
     # team win %
     t_season, t_abbr = pick(tm, "season"), pick(tm, "abbreviation", "abbr", "tm")
     tm = tm[tm[t_abbr].notna() & (tm[t_abbr] != "NA")]
+    if "lg" in tm.columns:
+        tm = tm[tm["lg"].astype(str).str.upper() == "NBA"]
     team_out = pd.DataFrame({
         "Season": tm[t_season].astype(int), "Team": tm[t_abbr],
         "TeamWinPct": tm[pick(tm, "w")] / (tm[pick(tm, "w")] + tm[pick(tm, "l")]),
